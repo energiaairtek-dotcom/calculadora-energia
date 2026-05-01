@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Airtek – Gestión de Energía</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Barlow:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    :root {
+      --bg-deep: #07101f;
+      --bg-surface: #0d1626;
+      --bg-card: #121e33;
+      --bg-elevated: #182540;
+      --border: #1a2d47;
+      --border-bright: #243d5e;
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.18);
+      --green: #10b981;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --red: #ef4444;
+      --tx1: #e2e8f0;
+      --tx2: #94a3b8;
+      --tx3: #475569;
+      --tx4: #2a3d5a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--tx1);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+    }
+
+    .fd {
+      font-family: 'Exo 2', sans-serif;
+    }
+
+    .fm {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Grid background */
+    .gridbg {
+      background-image:
+        linear-gradient(rgba(26, 45, 71, .35) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26, 45, 71, .35) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-surface);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-bright);
+      border-radius: 3px;
+    }
+
+    /* Inputs */
+    .fi {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      color: var(--tx1);
+      padding: 9px 13px;
+      border-radius: 7px;
+      width: 100%;
+      font-family: 'Barlow', sans-serif;
+      font-size: .9rem;
+      transition: border-color .18s;
+    }
+
+    .fi:focus {
+      outline: none;
+      border-color: var(--amber);
+    }
+
+    .fi::placeholder {
+      color: var(--tx3);
+    }
+
+    select.fi {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 11px center;
+      padding-right: 32px;
+    }
+
+    .mi {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      color: var(--green);
+      padding: 7px 10px;
+      border-radius: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .88rem;
+      width: 100%;
+    }
+
+    .mi:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+
+    /* Buttons */
+    .bp {
+      background: var(--amber);
+      color: #000;
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700;
+      padding: 10px 22px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      font-size: .88rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      transition: all .18s;
+    }
+
+    .bp:hover:not(:disabled) {
+      background: #fbbf24;
+      transform: translateY(-1px);
+    }
+
+    .bp:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .bs {
+      background: transparent;
+      color: var(--tx2);
+      border: 1px solid var(--border-bright);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: .88rem;
+      transition: all .18s;
+    }
+
+    .bs:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .bg {
+      background: var(--green);
+      color: #000;
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 700;
+      padding: 10px 22px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      font-size: .88rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      transition: all .18s;
+    }
+
+    .bg:hover {
+      background: #34d399;
+      transform: translateY(-1px);
+    }
+
+    .bd {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, .3);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: .82rem;
+      transition: all .18s;
+    }
+
+    .bd:hover {
+      background: rgba(239, 68, 68, .1);
+    }
+
+    .bi {
+      background: transparent;
+      color: var(--blue);
+      border: 1px solid rgba(59, 130, 246, .3);
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: .82rem;
+      transition: all .18s;
+    }
+
+    .bi:hover {
+      background: rgba(59, 130, 246, .1);
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    /* Badge */
+    .badge {
+      font-family: 'Exo 2', sans-serif;
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+
+    /* Topbar */
+    .topbar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 22px;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    /* Tabs */
+    .tab {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600;
+      font-size: .82rem;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      color: var(--tx3);
+      transition: all .18s;
+    }
+
+    .tab.on {
+      color: var(--amber);
+      border-bottom-color: var(--amber);
+    }
+
+    .tab:hover:not(.on) {
+      color: var(--tx2);
+    }
+
+    /* Label */
+    .lbl {
+      display: block;
+      font-family: 'Exo 2', sans-serif;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--tx2);
+      margin-bottom: 6px;
+    }
+
+    /* Animations */
+    .fin {
+      animation: fin .28s ease;
+    }
+
+    @keyframes fin {
+      from {
+        opacity: 0;
+        transform: translateY(7px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      padding: 12px 20px;
+      border-radius: 9px;
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600;
+      font-size: .88rem;
+      z-index: 9999;
+      animation: toast .28s ease;
+      max-width: 340px;
+      color: #fff;
+    }
+
+    @keyframes toast {
+      from {
+        transform: translateY(18px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Status pulse */
+    .pulse {
+      animation: pulse 2.2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .35
+      }
+    }
+
+    /* Overlay */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 16px;
+    }
+
+    /* Node card hover */
+    .ncard {
+      transition: background .18s, border-color .18s;
+    }
+
+    .ncard:hover {
+      background: var(--bg-elevated) !important;
+    }
+
+    /* Record row hover */
+    .rrow {
+      transition: background .15s;
+      cursor: pointer;
+    }
+
+    .rrow:hover {
+      background: var(--bg-elevated) !important;
+    }
+
+    @media (max-width: 600px) {
+      .topbar {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 54px;
+        gap: 10px;
+        justify-content: center;
+      }
+      .tbtn-txt { display: none; }
+      .card {
+        padding: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // ═══════════════════════════════════════════════════
+    // ⚙️  CONFIGURACIÓN FIREBASE — REEMPLAZA CON TUS DATOS
+    // ═══════════════════════════════════════════════════
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyDwaK4Z26RfqDwNvwdMqri08oEjwG9qymc",
+      authDomain: "almacen-airtek.firebaseapp.com",
+      projectId: "almacen-airtek",
+      storageBucket: "almacen-airtek.firebasestorage.app",
+      messagingSenderId: "934058211778",
+      appId: "1:934058211778:web:6cc9d820c41fa90aa5fe5b"
+    };
+
+    // ═══════════════════════════════════════════════════
+    // 📋 CATÁLOGO DE TIPOS DE EQUIPOS
+    // ═══════════════════════════════════════════════════
+    const EQ_TYPES = {
+      INV: { label: 'Inversor', color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
+      ETP: { label: 'ETP / PSU Huawei', color: '#10b981', bg: 'rgba(16,185,129,.12)' },
+      ATS: { label: 'Transferencia Automática', color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
+      BAT: { label: 'Banco de Baterías', color: '#8b5cf6', bg: 'rgba(139,92,246,.12)' },
+      OTR: { label: 'Otro', color: '#64748b', bg: 'rgba(100,116,139,.12)' },
+    };
+
+    // Orden canónico de tipos para mostrar equipos
+    const EQ_ORDER = { INV: 0, ETP: 1, ATS: 2, BAT: 3, OTR: 4 };
+
+    // Extrae identificador de banco del tag
+    // INV06-LFP00→LFP00 | BAT00-LFP→LFP00 | ETP02-AC-PV-NMC02→NMC02
+    const getBankId = tag => {
+      const t = (tag || '').toUpperCase();
+      const m1 = t.match(/(LFP|NMC|GEL|AGM|VRLA)(\d+)$/);
+      if (m1) return m1[1] + m1[2];
+      const m2 = t.match(/^BAT(\d+)[_-](LFP|NMC|GEL|AGM|VRLA)/);
+      if (m2) return m2[2] + m2[1];
+      return null;
+    };
+
+    // Agrupa equipos: no-BAT por banco → BAT al final del grupo → ATS/OTR al final
+    const groupByBank = (eqs) => {
+      const nonBat = eqs.filter(e => e.type !== 'BAT' && e.type !== 'ATS' && e.type !== 'OTR');
+      const bats = eqs.filter(e => e.type === 'BAT');
+      const atsotr = eqs.filter(e => e.type === 'ATS' || e.type === 'OTR');
+      const groups = [];
+      const seen = new Set();
+      nonBat.forEach(eq => {
+        const bank = getBankId(eq.tag);
+        if (!bank || seen.has(bank)) return;
+        seen.add(bank);
+        groups.push({
+          bank,
+          eqs: nonBat.filter(e => getBankId(e.tag) === bank),
+          bat: bats.find(b => getBankId(b.tag) === bank) || null
+        });
+      });
+      const ungrouped = nonBat.filter(e => !getBankId(e.tag));
+      if (ungrouped.length) groups.push({ bank: null, eqs: ungrouped, bat: null });
+      const orphanBats = bats.filter(b => !nonBat.some(e => getBankId(e.tag) === getBankId(b.tag)));
+      if (orphanBats.length) groups.push({ bank: '_orphan', eqs: [], bat: null, orphanBats });
+      if (atsotr.length) groups.push({ bank: '_ats', eqs: atsotr, bat: null });
+      return groups;
+    };
+
+    // Calcula carga kW separando AC y DC de un equipo dada sus mediciones
+    const calcLoad = (eqType, vals) => {
+      if (!vals) return { ac: 0, dc: 0 };
+      let ac = 0, dc = 0;
+      if (eqType === 'INV') {
+        if (vals.load_kw) ac = parseFloat(vals.load_kw) || 0;
+        else { const l1 = (parseFloat(vals.L1_pot) || 0), l2 = (parseFloat(vals.L2_pot) || 0); ac = l1 + l2; }
+      }
+      if (eqType === 'ETP') {
+        ac = parseFloat(vals.AC_load) || 0;
+        dc = parseFloat(vals.DC_load) || 0;
+      }
+      return { ac, dc };
+    };
+
+    // Voltaje nominal por tipo de batería (V)
+    const BAT_VN = { LFP: 48, GEL: 48, AGM: 48, VRLA: 48, NMC: 52.5 };
+    // Valores por defecto para autonomía según tipo
+    const BAT_DEFAULTS = {
+      LFP: { DoD: 0.8, SoH: 1.0, ebanco: 0.98, eTemp: 1.0, ereg: 0.85, eIny: 0.85 },
+      NMC: { DoD: 0.8, SoH: 0.45, ebanco: 0.95, eTemp: 1.0, ereg: 0.85, eIny: 0.85 },
+      GEL: { DoD: 0.6, SoH: 0.25, ebanco: 0.95, eTemp: 1.0, ereg: 0.85, eIny: 0.85 },
+      AGM: { DoD: 0.6, SoH: 0.25, ebanco: 0.95, eTemp: 1.0, ereg: 0.85, eIny: 0.85 },
+      VRLA: { DoD: 0.6, SoH: 0.25, ebanco: 0.95, eTemp: 1.0, ereg: 0.85, eIny: 0.85 },
+    };
+
+    // Fórmula idéntica a Excel: ((Cap * Vn) / ((CargaAC/eInv) + (CargaDC/eReg))) * DoD * SoH * ebanco * corrCorr * corrTemp
+    const calcAutonomy = (batEq, loadAcKW, loadDcKW) => {
+      if (!batEq) return null;
+      const loadAcW = (loadAcKW || 0) * 1000;
+      const loadDcW = (loadDcKW || 0) * 1000;
+      if (loadAcW <= 0 && loadDcW <= 0) return null;
+
+      const cap = parseFloat(batEq.batCapacity) || 0;
+      const type = batEq.batteryType || 'LFP';
+      if (!cap) return null;
+      const Vn = BAT_VN[type] || 48;
+      const def = BAT_DEFAULTS[type] || BAT_DEFAULTS.LFP;
+
+      // Analizar si DoD y SoH fueron guardados (usualmente en porcentaje, ej 80 para 80%) o usar defaults
+      let DoD = def.DoD, SoH = def.SoH;
+      if (batEq.batDoD) { const v = parseFloat(batEq.batDoD); DoD = v > 1 ? v / 100 : v; }
+      if (batEq.batSoH) { const v = parseFloat(batEq.batSoH); SoH = v > 1 ? v / 100 : v; }
+
+      const eb = parseFloat(batEq.batEbanco) || def.ebanco;
+      const eT = parseFloat(batEq.batETemp) || def.eTemp;
+      const eInv = def.eIny;
+      const eReg = def.ereg;
+
+      const adjLoad = (loadAcW / eInv) + (loadDcW / eReg);
+      if (adjLoad <= 0) return null;
+
+      const tHours = ((cap * Vn) / adjLoad) * DoD * SoH * eb * 1 * eT;
+      return tHours;
+    };
+    const fmtHours = h => {
+      if (!h || h <= 0) return '—';
+      const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+      return `${hh}h ${mm.toString().padStart(2, '0')}min`;
+    };
+    const sortEquipment = eqs => [...eqs].sort((a, b) => {
+      const oa = EQ_ORDER[a.type] ?? 5, ob = EQ_ORDER[b.type] ?? 5;
+      if (oa !== ob) return oa - ob;
+      return (a.tag || '').localeCompare(b.tag || '', 'es', { numeric: true });
+    });
+
+    const REC_TYPES = {
+      inspeccion: { label: 'Inspección', color: '#10b981', icon: '🔍' },
+      instalacion: { label: 'Instalación', color: '#3b82f6', icon: '⚡' },
+      reemplazo: { label: 'Reemplazo / Retiro', color: '#f59e0b', icon: '🔄' },
+      correctivo: { label: 'Mant. Correctivo', color: '#ef4444', icon: '🔧' },
+    };
+
+    const NODE_TYPES = {
+      fibra: { label: 'Nodo', color: '#10b981' },
+      datacenter: { label: 'Datacenter', color: '#3b82f6' },
+      headend: { label: 'Headend', color: '#8b5cf6' },
+      otro: { label: 'Otro', color: '#64748b' },
+    };
+
+    const BAT_TYPES = ['LFP', 'GEL', 'AGM', 'VRLA', 'NMC', 'No aplica'];
+    const BAT_CELL_TYPES = ['Prismática', 'Cilíndrica', 'Pouch', 'No aplica'];
+
+    // Nodos iniciales Airtek Zulia
+    const SEED_NODES = [
+      { name: 'Datacenter 18 de Octubre', zone: 'Maracaibo', type: 'datacenter' },
+      { name: 'Datacenter El Callao', zone: 'El Callao', type: 'datacenter' },
+      { name: 'Nodo Bella Vista', zone: 'Maracaibo', type: 'fibra' },
+      { name: 'Nodo Lago Caribe', zone: 'Maracaibo', type: 'fibra' },
+      { name: 'Nodo Las Tunas', zone: 'Maracaibo', type: 'fibra' },
+      { name: 'Nodo Marite', zone: 'Maracaibo', type: 'fibra' },
+      { name: 'Nodo Pomona', zone: 'Maracaibo', type: 'fibra' },
+      { name: 'Nodo San Rafael', zone: 'Maracaibo', type: 'fibra' },
+      { name: 'Nodo La Concepción', zone: 'La Concepción', type: 'fibra' },
+      { name: 'Los Puertos De Altagracia', zone: 'Miranda', type: 'fibra' },
+      { name: 'Nodo Cabimas', zone: 'Cabimas', type: 'fibra' },
+      { name: 'Nodo Ciudad Ojeda', zone: 'Lagunillas', type: 'fibra' },
+      { name: 'Nodo Bachaquero', zone: 'Valmore Rodríguez', type: 'fibra' },
+      { name: 'Nodo Mene Grande', zone: 'Baralt', type: 'fibra' },
+      { name: 'Nodo La Villa del Rosario – Celular Point', zone: 'Rosario de Perijá', type: 'fibra' },
+      { name: 'Nodo Machiques', zone: 'Machiques', type: 'fibra' },
+      { name: 'Headend Machiques', zone: 'Machiques', type: 'headend' },
+      { name: 'Nodo San José', zone: 'San José', type: 'fibra' },
+      { name: 'Nodo Barranquitas', zone: 'Maracaibo', type: 'fibra' },
+      { name: 'Nodo La Cañada de Urdaneta', zone: 'Cañada de Urdaneta', type: 'fibra' },
+      { name: 'Nodo San Rafael de El Mojan', zone: 'Mara', type: 'fibra' },
+      { name: 'Nodo Santa Cruz de Mara', zone: 'Santa Cruz de Mara', type: 'fibra' },
+      { name: 'Nodo Paraguaipoa', zone: 'Guajira', type: 'fibra' },
+    ];
+
+    function AutonomiaInput({ label, val, onChange, unit, small }) {
+      return (
+        <div>
+          <label style={{ display: 'block', fontSize: '.65rem', color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 3, fontFamily: "'Exo 2',sans-serif" }}>
+            {label}{unit && <span style={{ color: 'var(--amber)', marginLeft: 3 }}>{unit}</span>}
+          </label>
+          <input className="mi" type="text" inputMode="decimal" value={val}
+            onChange={e => onChange(e.target.value)}
+            style={{ fontSize: small ? '.8rem' : '.88rem' }} placeholder="0" />
+        </div>
+      );
+    }
+
+    function AutonomiaCalc() {
+      const [bancos, setBancos] = useState([
+        { id: 1, tipo: 'LFP', capacidad: '', Vn: '48', SoH: '1.0', DoD: '0.8', ebanco: '0.98', eTemp: '1.0', carga: '', resultado: null }
+      ]);
+
+      const addBanco = () => setBancos(prev => [...prev, {
+        id: Date.now(), tipo: 'LFP', capacidad: '', Vn: '48', SoH: '1.0', DoD: '0.8', ebanco: '0.98', eTemp: '1.0', carga: '', resultado: null
+      }]);
+
+      const removeBanco = id => setBancos(prev => prev.filter(b => b.id !== id));
+
+      const updateBanco = (id, key, val) => setBancos(prev => prev.map(b => {
+        if (b.id !== id) return b;
+        const nb = { ...b, [key]: val };
+        // Auto-fill defaults when type changes
+        if (key === 'tipo') {
+          const def = BAT_DEFAULTS[val] || BAT_DEFAULTS.LFP;
+          const Vn = BAT_VN[val] || 48;
+          nb.Vn = String(Vn);
+          nb.DoD = String(def.DoD);
+          nb.SoH = String(def.SoH);
+          nb.ebanco = String(def.ebanco);
+        }
+        // Recalculate autonomy
+        const toNum = s => parseFloat((s || '').toString().replace(',', '.'));
+        const cap = toNum(nb.capacidad) || 0;
+        const load = toNum(nb.carga) || 0;
+        if (cap > 0 && load > 0) {
+          const Vn = toNum(nb.Vn) || 48;
+          const SoH = toNum(nb.SoH) || 1;
+          const DoD = toNum(nb.DoD) || 0.8;
+          const eb = toNum(nb.ebanco) || 0.95;
+          const eT = toNum(nb.eTemp) || 1;
+          const ereg = (BAT_DEFAULTS[nb.tipo] || BAT_DEFAULTS.LFP).ereg;
+          nb.resultado = (Vn * cap * SoH * DoD * eb * eT) / (load * 1000 / ereg);
+        } else {
+          nb.resultado = null;
+        }
+        return nb;
+      }));
+
+      return (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div>
+              <div className="fd" style={{ fontSize: '.85rem', fontWeight: 700, color: 'var(--tx2)', textTransform: 'uppercase', letterSpacing: '.06em' }}>Calculadora de Autonomía</div>
+              <div style={{ fontSize: '.74rem', color: 'var(--tx4)', marginTop: 2 }}>t = (Vn × Cap × SoH × DoD × η) / (Carga_kW × 1000 / ηreg)</div>
+            </div>
+            <button className="bg" style={{ fontSize: '.8rem', padding: '7px 14px' }} onClick={addBanco}>+ Banco</button>
+          </div>
+
+          {bancos.map((b, idx) => {
+            const autColor = !b.resultado ? '#64748b' : b.resultado > 4 ? '#10b981' : b.resultado > 2 ? '#f59e0b' : '#ef4444';
+            return (
+              <div key={b.id} className="card" style={{ marginBottom: 12, borderLeft: `3px solid ${autColor}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <span className="fd" style={{ fontWeight: 700, color: 'var(--tx1)', fontSize: '.9rem' }}>Banco {idx + 1}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {b.resultado && (
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="fm" style={{ fontSize: '1.5rem', fontWeight: 800, color: autColor, lineHeight: 1 }}>{fmtHours(b.resultado)}</div>
+                        <div style={{ fontSize: '.65rem', color: 'var(--tx3)' }}>autonomía estimada</div>
+                      </div>
+                    )}
+                    {bancos.length > 1 && <button onClick={() => removeBanco(b.id)} className="bd" style={{ padding: '4px 10px', fontSize: '.72rem' }}>✕</button>}
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 10 }}>
+                  <div>
+                    <label className="lbl">Tipo de Batería</label>
+                    <select className="fi" value={b.tipo} onChange={e => updateBanco(b.id, 'tipo', e.target.value)}>
+                      {['LFP', 'NMC', 'GEL', 'AGM', 'VRLA'].map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <AutonomiaInput label="Capacidad" unit="Ah" val={b.capacidad} onChange={v => updateBanco(b.id, 'capacidad', v)} />
+                  <AutonomiaInput label="Carga del Banco" unit="kW" val={b.carga} onChange={v => updateBanco(b.id, 'carga', v)} />
+                  <AutonomiaInput label="Vn Banco" unit="V" val={b.Vn} onChange={v => updateBanco(b.id, 'Vn', v)} small />
+                  <AutonomiaInput label="SoH (0-1)" unit="" val={b.SoH} onChange={v => updateBanco(b.id, 'SoH', v)} small />
+                  <AutonomiaInput label="DoD (0-1)" unit="" val={b.DoD} onChange={v => updateBanco(b.id, 'DoD', v)} small />
+                  <AutonomiaInput label="η Banco" unit="" val={b.ebanco} onChange={v => updateBanco(b.id, 'ebanco', v)} small />
+                  <AutonomiaInput label="η Temp" unit="" val={b.eTemp} onChange={v => updateBanco(b.id, 'eTemp', v)} small />
+                </div>
+
+                {!b.resultado && b.capacidad && b.carga && (
+                  <div style={{ marginTop: 8, fontSize: '.75rem', color: '#f59e0b' }}>⚠ Completa capacidad y carga para calcular.</div>
+                )}
+              </div>
+            );
+          })}
+
+          {bancos.some(b => b.resultado) && (
+            <div style={{ background: 'rgba(16,185,129,.08)', border: '1px solid rgba(16,185,129,.2)', borderRadius: 8, padding: '12px 16px', marginTop: 4 }}>
+              <div className="fd" style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8 }}>Resumen</div>
+              {bancos.filter(b => b.resultado).map((b, i) => (
+                <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ color: 'var(--tx2)', fontSize: '.85rem' }}>Banco {i + 1} — {b.tipo} {b.capacidad}Ah</span>
+                  <span className="fm" style={{ fontWeight: 700, color: b.resultado > 4 ? '#10b981' : b.resultado > 2 ? '#f59e0b' : '#ef4444' }}>{fmtHours(b.resultado)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+
+    // ═══════════════════════════════════════════════════
+    // 🔋 VISTA STANDALONE DE AUTONOMÍA
+    // ═══════════════════════════════════════════════════
+    function SimpleAutonomiaCalc() {
+      const [cargaW, setCargaW] = useState('');
+      const [horas, setHoras] = useState('');
+
+      const toNum = s => parseFloat((s || '').toString().replace(',', '.'));
+      const P = toNum(cargaW) || 0;
+      const t = toNum(horas) || 0;
+
+      const gel100 = P > 0 && t > 0 ? Math.ceil((P * t) / (48 * 100 * 0.5 * 0.95 * 0.95)) * 4 : 0;
+      const gel200 = P > 0 && t > 0 ? Math.ceil((P * t) / (48 * 200 * 0.5 * 0.95 * 0.95)) * 4 : 0;
+      const lfp100 = P > 0 && t > 0 ? Math.ceil((P * t) / (48 * 100 * 0.8 * 0.98 * 0.95)) : 0;
+      const nmc52 = P > 0 && t > 0 ? Math.ceil((P * t) / (52.5 * 66.2 * 0.8 * 0.95 * 0.95)) : 0;
+
+      return (
+        <div className="card" style={{ marginBottom: 20, borderColor: 'rgba(16,185,129,.3)', background: 'rgba(16,185,129,.03)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ width: 34, height: 34, background: '#10b981', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: '#fff' }}>⚡</div>
+            <div>
+              <h3 className="fd" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--tx1)' }}>Proyección Rápida de Baterías</h3>
+              <div style={{ fontSize: '.75rem', color: 'var(--tx3)' }}>Ingresa los requerimientos para estimar la cantidad de unidades necesarias (para sistemas a 48V).</div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+            <div>
+              <label className="lbl">Carga (Watts)</label>
+              <div style={{ position: 'relative' }}>
+                <input className="fi" type="number" step="any" value={cargaW} onChange={e => setCargaW(e.target.value)} placeholder="Ej: 1500" style={{ paddingRight: 40, fontSize: '1.1rem', fontWeight: 600 }} />
+                <span style={{ position: 'absolute', right: 12, top: 10, color: 'var(--tx4)', fontSize: '.8rem', fontWeight: 700 }}>W</span>
+              </div>
+            </div>
+            <div>
+              <label className="lbl">Autonomía Deseada (Horas)</label>
+              <div style={{ position: 'relative' }}>
+                <input className="fi" type="number" step="any" value={horas} onChange={e => setHoras(e.target.value)} placeholder="Ej: 4" style={{ paddingRight: 40, fontSize: '1.1rem', fontWeight: 600 }} />
+                <span style={{ position: 'absolute', right: 12, top: 10, color: 'var(--tx4)', fontSize: '.8rem', fontWeight: 700 }}>h</span>
+              </div>
+            </div>
+          </div>
+
+          {(P > 0 && t > 0) ? (
+            <div>
+              <div className="fd" style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>Configuraciones Sugeridas</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                <div style={{ background: 'var(--bg-deep)', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ color: 'var(--tx2)', fontSize: '.8rem', fontWeight: 600, marginBottom: 4 }}>Pylontech LFP (48V 100Ah)</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span className="fm" style={{ fontSize: '1.6rem', color: '#10b981', fontWeight: 800 }}>{lfp100}</span>
+                    <span style={{ fontSize: '.75rem', color: 'var(--tx4)' }}>unidades</span>
+                  </div>
+                </div>
+                <div style={{ background: 'var(--bg-deep)', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ color: 'var(--tx2)', fontSize: '.8rem', fontWeight: 600, marginBottom: 4 }}>Baterías GEL (12V 200Ah)</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span className="fm" style={{ fontSize: '1.6rem', color: '#f59e0b', fontWeight: 800 }}>{gel200}</span>
+                    <span style={{ fontSize: '.75rem', color: 'var(--tx4)' }}>unidades ({gel200 / 4} arreglos)</span>
+                  </div>
+                </div>
+                <div style={{ background: 'var(--bg-deep)', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ color: 'var(--tx2)', fontSize: '.8rem', fontWeight: 600, marginBottom: 4 }}>Paquetes NMC (52.5V 66Ah)</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span className="fm" style={{ fontSize: '1.6rem', color: '#8b5cf6', fontWeight: 800 }}>{nmc52}</span>
+                    <span style={{ fontSize: '.75rem', color: 'var(--tx4)' }}>paquetes</span>
+                  </div>
+                </div>
+                <div style={{ background: 'var(--bg-deep)', padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div style={{ color: 'var(--tx2)', fontSize: '.8rem', fontWeight: 600, marginBottom: 4 }}>Baterías GEL (12V 100Ah)</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <span className="fm" style={{ fontSize: '1.6rem', color: '#64748b', fontWeight: 800 }}>{gel100}</span>
+                    <span style={{ fontSize: '.75rem', color: 'var(--tx4)' }}>unidades ({gel100 / 4} arreglos)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--tx4)', fontSize: '.85rem' }}>
+              Ingresa la carga y las horas para ver la proyección de unidades.
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function AutonomiaWrapper() {
+      return (
+        <div className="fin">
+          <div style={{ marginBottom: 20 }}>
+            <h1 className="fd" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--tx1)', marginBottom: 4 }}>🔋 Calculadoras de Autonomía</h1>
+            <p style={{ color: 'var(--tx3)', fontSize: '.85rem' }}>Herramientas para proyectar requerimientos y estimar el rendimiento de la red.</p>
+          </div>
+          <SimpleAutonomiaCalc />
+          <AutonomiaCalc />
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    // 🧮 CALCULADORA DE MATERIALES
+    // ═══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════
+    // 🧮 CALCULADORA DE MATERIALES (una sola tabla unificada)
+    // ═══════════════════════════════════════════════════
+    const MAT_FUENTES_NEW = [
+      { nombre: 'CABLE ROJO AUTOMOTRIZ #2 AWG', cantidadBase: 1.5, unidad: 'mts', dep: 'fuentes' },
+      { nombre: 'CABLE NEGRO AUTOMOTRIZ #2 AWG', cantidadBase: 1.5, unidad: 'mts', dep: 'fuentes' },
+      { nombre: 'TERMINAL DE OJO #2', cantidadBase: 4, unidad: 'und', dep: 'fuentes' },
+      { nombre: 'TERMINAL DE OJO #{calibre} AWG', cantidadBase: 1, unidad: 'und', dep: 'fuentes', dinamico: true },
+      { nombre: 'TERMINAL AUTOMOTRIZ AISLADO DE ANILLO #10-12 AWG (M6)', cantidadBase: 2, unidad: 'und', dep: 'fuentes' },
+      { nombre: 'TORNILLO 5/16"', cantidadBase: 2, unidad: 'und', dep: 'fuentes' },
+      { nombre: 'ARANDELA 5/16"', cantidadBase: 2, unidad: 'und', dep: 'fuentes' },
+      { nombre: 'TUERCA 5/16"', cantidadBase: 2, unidad: 'und', dep: 'fuentes' },
+      { nombre: 'CHASIS DE FUENTE DE PODER (PSU) HUAWEI ETP23006', cantidadBase: 1, unidad: 'und', dep: 'fuentes' },
+      { nombre: 'MODULO INVERSOR HUAWEI', cantidadBase: 1, unidad: 'und', dep: 'inversores' },
+      { nombre: 'MODULO RECTIFICADOR HUAWEI', cantidadBase: 1, unidad: 'und', dep: 'rectificadores' },
+      { nombre: 'MODULO SOLAR SCC MPPT HUAWEI', cantidadBase: 1, unidad: 'und', dep: 'solares' },
+      { nombre: 'CONECTOR PV HUAWEI PARA MODULO SOLAR', cantidadBase: 2, unidad: 'und', dep: 'solares' },
+    ];
+    const MAT_RACK_NEW = [
+      { nombre: 'RACK PISO STRIG 42U CERRADO', cantidadBase: 1, unidad: 'und', dep: 'racks' },
+      { nombre: 'TERMINAL AUTOMOTRIZ AISLADO DE ANILLO #10-12 AWG (M6)', cantidadBase: 2, unidad: 'und', dep: 'racks' },
+      { nombre: 'BATERIA PYLONTECH US/UP 5000', cantidadBase: 1, unidad: 'und', dep: 'baterias' },
+      { nombre: 'KIT DE CABLES EXTERNOS PYLONTECH US/UP', cantidadBase: 1, unidad: 'und', dep: 'baterias' },
+      { nombre: 'TORNILLO 5/16"', cantidadBase: 2, unidad: 'und', dep: 'baterias' },
+      { nombre: 'ARANDELA 5/16"', cantidadBase: 2, unidad: 'und', dep: 'baterias' },
+      { nombre: 'TUERCA 5/16"', cantidadBase: 2, unidad: 'und', dep: 'baterias' },
+      { nombre: 'BARRA PLETINA DE COBRE 30 CM', cantidadBase: 2, unidad: 'und', dep: 'racks' },
+      { nombre: 'AISLADOR PARA BARRA DE COBRE SM-35', cantidadBase: 4, unidad: 'und', dep: 'racks' },
+      { nombre: 'TORNILLO 5/16"', cantidadBase: 8, unidad: 'und', dep: 'racks' },
+      { nombre: 'ARANDELA 5/16"', cantidadBase: 8, unidad: 'und', dep: 'racks' },
+    ];
+    const MAT_ESC_NEW = [
+      { nombre: 'ACOPLADOR GALVANIZADO PARA BANDEJA', cantidadBase: 1, unidad: 'und', dep: 'soportes' },
+      { nombre: 'SOPORTE RIEL UNISTRURT DE 30CM', cantidadBase: 1, unidad: 'und', dep: 'soportes' },
+      { nombre: 'SOPORTE PARA ANCLAJE DE BANDEJA EN TECHO', cantidadBase: 2, unidad: 'und', dep: 'soportes' },
+      { nombre: 'TUERCA PARA BARRA ROSCADA DE 1/2"', cantidadBase: 8, unidad: 'und', dep: 'soportes' },
+      { nombre: 'ARANDELA PARA BARRA ROSCADA DE 1/2"', cantidadBase: 8, unidad: 'und', dep: 'soportes' },
+      { nombre: 'TORNILLOS PARA RAMPLUG NARANJA', cantidadBase: 4, unidad: 'und', dep: 'soportes' },
+      { nombre: 'RAMPLUG NARANJA 3/8"', cantidadBase: 4, unidad: 'und', dep: 'soportes' },
+      { nombre: 'ARANDELAS 1/4', cantidadBase: 4, unidad: 'und', dep: 'soportes' },
+    ];
+
+    function calcularMaterialesTotal({ fuentes, calibre, rect, inv, solar, racks, baterias, soportes }) {
+      const mapa = new Map();
+      const add = (nombre, cantidad, unidad, seccion) => {
+        if (cantidad <= 0) return;
+        if (mapa.has(nombre)) mapa.get(nombre).cantidad += cantidad;
+        else mapa.set(nombre, { cantidad, unidad, seccion });
+      };
+      const n = v => parseFloat((v || '0').toString().replace(',', '.')) || 0;
+      const F = n(fuentes), C = n(calibre), R = n(rect), I = n(inv), S = n(solar), Ra = n(racks), B = n(baterias), So = n(soportes);
+      MAT_FUENTES_NEW.forEach(m => {
+        const mult = m.dep === 'fuentes' ? F : m.dep === 'inversores' ? I * F : m.dep === 'rectificadores' ? R * F : m.dep === 'solares' ? S * F : 0;
+        const nombre = m.dinamico && C > 0 ? m.nombre.replace('{calibre}', C) : m.nombre;
+        add(nombre, m.cantidadBase * mult, m.unidad, 'fuentes');
+      });
+      MAT_RACK_NEW.forEach(m => {
+        const mult = m.dep === 'racks' ? Ra : m.dep === 'baterias' ? B : 0;
+        add(m.nombre, m.cantidadBase * mult, m.unidad, 'rack');
+      });
+      MAT_ESC_NEW.forEach(m => add(m.nombre, m.cantidadBase * So, m.unidad, 'escalerillas'));
+      const orden = { fuentes: 1, rack: 2, escalerillas: 3 };
+      return Array.from(mapa.entries())
+        .map(([nombre, d]) => ({ nombre, cantidad: d.cantidad, unidad: d.unidad, seccion: d.seccion }))
+        .sort((a, b) => (orden[a.seccion] || 4) - (orden[b.seccion] || 4));
+    }
+
+    function MaterialesCalc() {
+      const [proyecto, setProyecto] = useState('');
+      const [f, setF] = useState({ fuentes: '', calibre: '', rect: '', inv: '', solar: '', racks: '', baterias: '', soportes: '' });
+      const [resultados, setResultados] = useState(null); // null=sin calcular, []=vacío
+
+      const calcular = () => {
+        const res = calcularMaterialesTotal(f);
+        setResultados(res);
+      };
+
+      const copy = () => {
+        if (!resultados || !resultados.length) return;
+        let txt = 'AIRTEK - MATERIALES TOTALES\n';
+        if (proyecto) txt += 'Proyecto: ' + proyecto + '\n';
+        txt += 'Fecha: ' + new Date().toLocaleString() + '\n';
+        txt += '----------------------------------------\n\n';
+        resultados.forEach(r => {
+          const c = Number.isInteger(r.cantidad) ? r.cantidad : r.cantidad.toFixed(2);
+          txt += r.nombre + ': ' + c + ' ' + r.unidad + '\n';
+        });
+        navigator.clipboard.writeText(txt).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = txt; ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+        });
+      };
+
+      const exportXlsx = () => {
+        if (!resultados || !resultados.length) return;
+        const rows = resultados.map(r => ({
+          'Material': r.nombre,
+          'Cantidad': Number.isInteger(r.cantidad) ? r.cantidad : parseFloat(r.cantidad.toFixed(2)),
+          'Unidad': r.unidad,
+          'Sección': r.seccion,
+        }));
+        const wb = window.XLSX.utils.book_new();
+        const ws = window.XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = [{ wch: 55 }, { wch: 12 }, { wch: 10 }, { wch: 14 }];
+        window.XLSX.utils.book_append_sheet(wb, ws, 'Materiales');
+        window.XLSX.writeFile(wb, 'materiales_airtek_' + Date.now() + '.xlsx');
+      };
+
+      const FI2 = ({ label, k, placeholder, type = 'number' }) => (
+        <div>
+          <label className="lbl">{label}</label>
+          <input className="fi" type={type} value={f[k]} onChange={e => setF(p => ({ ...p, [k]: e.target.value }))} placeholder={placeholder || '0'} />
+        </div>
+      );
+
+      return (
+        <div className="fin">
+          <div style={{ marginBottom: 18 }}>
+            <h1 className="fd" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--tx1)', marginBottom: 4 }}>🧮 Calculadora de Materiales</h1>
+            <p style={{ color: 'var(--tx3)', fontSize: '.85rem' }}>Todos los materiales en una sola lista consolidada</p>
+          </div>
+
+          <div className="card" style={{ marginBottom: 14 }}>
+            <label className="lbl">Nombre del Proyecto (opcional)</label>
+            <input className="fi" type="text" value={proyecto} onChange={e => setProyecto(e.target.value)}
+              placeholder="Ej: Nodo Bella Vista — Instalación ETP" />
+          </div>
+
+          {/* Fuentes */}
+          <div className="card" style={{ marginBottom: 10 }}>
+            <div className="fd" style={{ fontSize: '.78rem', fontWeight: 700, color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 12 }}>⚡ Fuentes ETP Huawei 23006</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(175px,1fr))', gap: 10 }}>
+              <FI2 label="Cantidad de fuentes" k="fuentes" />
+              <div>
+                <label className="lbl">Calibre entrada AC (AWG)</label>
+                <select className="fi" value={f.calibre} onChange={e => setF(p => ({ ...p, calibre: e.target.value }))}>
+                  <option value="">-- Sin calibre --</option>
+                  {['14', '12', '10', '8', '6', '4', '3', '2', '1', '1/0', '2/0', '3/0', '4/0'].map(c => <option key={c} value={c}>{c} AWG</option>)}
+                </select>
+              </div>
+              <FI2 label="Módulos rectificadores/fuente" k="rect" />
+              <FI2 label="Módulos inversores/fuente" k="inv" />
+              <FI2 label="Módulos solares MPPT/fuente" k="solar" />
+            </div>
+          </div>
+
+          {/* Rack */}
+          <div className="card" style={{ marginBottom: 10 }}>
+            <div className="fd" style={{ fontSize: '.78rem', fontWeight: 700, color: '#8b5cf6', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 12 }}>🔋 Rack + Baterías Pylontech</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <FI2 label="Cantidad de racks" k="racks" />
+              <FI2 label="Cantidad de baterías" k="baterias" />
+            </div>
+          </div>
+
+          {/* Escalerillas */}
+          <div className="card" style={{ marginBottom: 14 }}>
+            <div className="fd" style={{ fontSize: '.78rem', fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 12 }}>🏗️ Escalerillas y Soportes</div>
+            <div style={{ maxWidth: 280 }}>
+              <FI2 label="Cantidad de soportes de techo" k="soportes" />
+            </div>
+          </div>
+
+          <button className="bp" style={{ width: '100%', marginBottom: 16, fontSize: '.95rem', padding: '12px' }} onClick={calcular}>
+            📐 Calcular Materiales Totales
+          </button>
+
+          {resultados === null && (
+            <div className="card" style={{ textAlign: 'center', padding: 32, color: 'var(--tx3)' }}>
+              Complete los valores y presione Calcular
+            </div>
+          )}
+
+          {resultados !== null && resultados.length === 0 && (
+            <div className="card" style={{ textAlign: 'center', padding: 32, color: 'var(--tx3)' }}>
+              No hay materiales con cantidad positiva. Ingrese al menos un valor.
+            </div>
+          )}
+
+          {resultados !== null && resultados.length > 0 && (
+            <div>
+              <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden', marginBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', background: 'var(--bg-elevated)', padding: '8px 12px', fontSize: '.7rem', color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '.06em', fontFamily: "'Exo 2',sans-serif" }}>
+                  <span>Material</span><span style={{ textAlign: 'center', minWidth: 60 }}>Cantidad</span><span style={{ textAlign: 'center', minWidth: 45 }}>Unidad</span>
+                </div>
+                {resultados.map((r, i) => {
+                  const secColors = { fuentes: 'var(--amber)', rack: 'var(--purple)', escalerillas: 'var(--blue)' };
+                  const c = Number.isInteger(r.cantidad) ? r.cantidad : r.cantidad.toFixed(2);
+                  return (
+                    <div key={i} style={{
+                      display: 'grid', gridTemplateColumns: '1fr auto auto', padding: '9px 12px',
+                      background: i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-card)',
+                      borderTop: '1px solid var(--border)', alignItems: 'center', gap: 8
+                    }}>
+                      <div>
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: secColors[r.seccion] || 'var(--tx3)', marginRight: 7, flexShrink: 0, verticalAlign: 'middle' }}></span>
+                        <span style={{ fontSize: '.84rem', color: 'var(--tx1)' }}>{r.nombre}</span>
+                      </div>
+                      <span className="fm" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--green)', textAlign: 'center', minWidth: 60 }}>{c}</span>
+                      <span style={{ fontSize: '.78rem', color: 'var(--tx3)', textAlign: 'center', minWidth: 45 }}>{r.unidad}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="bg" style={{ flex: 1, fontSize: '.85rem' }} onClick={copy}>📋 Copiar lista</button>
+                <button className="bs" style={{ flex: 1, fontSize: '.85rem' }} onClick={exportXlsx}>📊 Exportar Excel</button>
+              </div>
+              <div style={{ marginTop: 8, fontSize: '.72rem', color: 'var(--tx4)', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+                <span><span style={{ color: 'var(--amber)' }}>●</span> Fuentes ETP</span>
+                <span><span style={{ color: 'var(--purple)' }}>●</span> Rack + Baterías</span>
+                <span><span style={{ color: 'var(--blue)' }}>●</span> Escalerillas</span>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════
+    // 🚀 APP ROOT
+    // ═══════════════════════════════════════════════════
+    function Toast({ data }) {
+      if (!data) return null;
+      const isErr = data.type === 'error';
+      return (
+        <div style={{ position: 'fixed', bottom: 20, right: 20, background: isErr ? 'var(--red)' : 'var(--green)', color: isErr ? '#fff' : '#000', padding: '12px 24px', borderRadius: 8, zIndex: 9999, fontWeight: 600, boxShadow: '0 4px 12px rgba(0,0,0,.3)' }}>
+          {data.msg}
+        </div>
+      );
+    }
+
+    function App() {
+      const [appView, setAppView] = useState('autonomia');
+      const [toastData, setToastData] = useState(null);
+
+      const toast = useCallback((msg, type = 'info') => {
+        setToastData({ msg, type, key: Date.now() });
+        setTimeout(() => setToastData(null), 3000);
+      }, []);
+
+      return (
+        <div className="gridbg" style={{ minHeight: '100vh', paddingBottom: 60 }}>
+          <div className="topbar">
+            <div className="fin" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: '1.4rem', filter: 'drop-shadow(0 0 8px rgba(59,130,246,.5))' }}>⚡</span>
+                <div>
+                  <div className="fd" style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '.05em', color: 'var(--tx1)' }}>AIRTEK <span style={{ color: 'var(--blue)' }}>ENERGÍA</span></div>
+                  <div style={{ fontSize: '.7rem', color: 'var(--tx3)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Herramientas y Calculadoras</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setAppView('autonomia')} className={appView === 'autonomia' ? 'bi' : 'bs'}>🔋 Autonomía</button>
+                <button onClick={() => setAppView('materiales')} className={appView === 'materiales' ? 'bi' : 'bs'}>🧮 Materiales</button>
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ paddingTop: 30 }}>
+            <div className="fin" style={{ padding: '0 22px', maxWidth: 1200, margin: '0 auto' }}>
+              {appView === 'autonomia' && (
+                <>
+                  <AutonomiaWrapper />
+                </>
+              )}
+              {appView === 'materiales' && <MaterialesCalc />}
+            </div>
+          </div>
+          <Toast data={toastData} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
